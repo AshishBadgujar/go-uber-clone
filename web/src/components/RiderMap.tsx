@@ -1,11 +1,12 @@
 'use client';
 
 import Image from 'next/image';
+import { useGeolocation } from '../hooks/useGeolocation';
 import { useRiderStreamConnection } from '../hooks/useRiderStreamConnection';
 import { MapContainer, Marker, Popup, Rectangle, TileLayer } from 'react-leaflet'
 import L from 'leaflet';
 import { getGeohashBounds } from '../utils/geohash';
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState, useEffect } from 'react';
 import { MapClickHandler } from './MapClickHandler';
 import { Button } from './ui/button';
 import { RouteFare, RequestRideProps, TripPreview, HTTPTripStartResponse } from "../types";
@@ -38,10 +39,19 @@ export default function RiderMap({ onRouteSelected }: RiderMapProps) {
     const userID = useMemo(() => crypto.randomUUID(), [])
     const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-    const location = {
+    const { location: currentLocation } = useGeolocation();
+    const defaultLocation = {
         latitude: 37.7749,
         longitude: -122.4194,
     };
+
+    const location = currentLocation || defaultLocation;
+
+    useEffect(() => {
+        if (mapRef.current && currentLocation) {
+            mapRef.current.flyTo([currentLocation.latitude, currentLocation.longitude], 13);
+        }
+    }, [currentLocation]);
 
     const {
         drivers,

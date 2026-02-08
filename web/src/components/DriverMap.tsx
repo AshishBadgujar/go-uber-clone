@@ -1,10 +1,11 @@
 "use client"
 
+import { useGeolocation } from "../hooks/useGeolocation"
 import { useDriverStreamConnection } from "../hooks/useDriverStreamConnection"
 import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet'
 import L from 'leaflet';
 import { MapClickHandler } from './MapClickHandler';
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useRef } from "react";
 import { CarPackageSlug, Coordinate } from "../types";
 import { DriverTripOverview } from "./DriverTripOverview";
@@ -39,7 +40,21 @@ const destinationMarker = new L.Icon({
 export const DriverMap = ({ packageSlug }: { packageSlug: CarPackageSlug }) => {
   const mapRef = useRef<L.Map>(null)
   const userID = useMemo(() => crypto.randomUUID(), [])
+
+  const { location: currentLocation } = useGeolocation();
   const [riderLocation, setRiderLocation] = useState<Coordinate>(START_LOCATION)
+
+  useEffect(() => {
+    if (currentLocation) {
+      setRiderLocation({
+        latitude: currentLocation.latitude,
+        longitude: currentLocation.longitude
+      })
+      if (mapRef.current) {
+        mapRef.current.flyTo([currentLocation.latitude, currentLocation.longitude], 13);
+      }
+    }
+  }, [currentLocation])
 
   const driverGeohash = useMemo(() =>
     Geohash.encode(riderLocation?.latitude, riderLocation?.longitude, 7)
